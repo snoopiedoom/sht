@@ -36,4 +36,4 @@ This will:
 RUN
 ---
 
-    ./bin/simple-http-tui
+  ./bin/simple-http-tui

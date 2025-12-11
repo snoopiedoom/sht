@@ -1,3 +1,4 @@
+# ai generated makefiles got me tweaking fr fr kike killer 9000
 # ===========================
 # Build config
 # ===========================
@@ -10,7 +11,7 @@ SRC_DIR := src
 OBJ_DIR := build
 BIN_DIR := bin
 
-TARGET  := $(BIN_DIR)/simple-http-tui
+TARGET  := $(BIN_DIR)/sht
 
 SRC := $(SRC_DIR)/main.c \
        $(SRC_DIR)/ui.c
@@ -51,7 +52,7 @@ compiledb:
 # ===========================
 linux:
 	$(MAKE) clean
-	$(MAKE) CC=clang TARGET=$(BIN_DIR)/simple-http-tui
+	$(MAKE) CC=clang TARGET=$(BIN_DIR)/sht
 
 # ===========================
 # Windows cross-build (WSL)
@@ -108,13 +109,13 @@ windows: notcurses-win
 	$(MAKE) CC=$(MINGW_CC) \
 		CFLAGS="-I$(MINGW_PREFIX)/include -O2 -std=c11" \
 		LDFLAGS="-L$(MINGW_PREFIX)/lib -lnotcurses-core -lnotcurses -static" \
-		TARGET=$(BIN_DIR)/simple-http-tui.exe
+		TARGET=$(BIN_DIR)/sht.exe
 
 # ===========================
 # Windows packaging
 # ===========================
 PACKAGE_DIR := dist/win
-PACKAGE_ZIP := dist/simple-http-tui-win.zip
+PACKAGE_ZIP := dist/sht-win.zip
 
 package-win: windows
 	@echo "Packaging Windows build..."
@@ -122,7 +123,7 @@ package-win: windows
 	@mkdir -p $(PACKAGE_DIR)
 
 	# Copy executable
-	@cp bin/simple-http-tui.exe $(PACKAGE_DIR)
+	@cp bin/sht.exe $(PACKAGE_DIR)
 
 	# Copy required MinGW DLLs
 	@cp /usr/x86_64-w64-mingw32/bin/libgcc_s_seh-1.dll $(PACKAGE_DIR) || true
@@ -137,5 +138,5 @@ package-win: windows
 
 	# Create zip
 	@rm -f $(PACKAGE_ZIP)
-	@cd dist && zip -r simple-http-tui-win.zip win
+	@cd dist && zip -r sht-win.zip win
 	@echo "Done. Output: $(PACKAGE_ZIP)"
