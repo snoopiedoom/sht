@@ -1,0 +1,25 @@
+{
+    "clangd.arguments": [
+        "--background-index",
+        "--header-insertion=never"
+    ],
+    "C_Cpp.intelliSenseEngine": "Disabled",
+    "files.associations": {
+        "*.tui": "c",
+        ".clangd": "yaml"
+    },
+    "[yaml]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 2,
+        "editor.autoIndent": "keep",
+        "diffEditor.ignoreTrimWhitespace": false,
+        "editor.defaultColorDecorators": "never",
+        "editor.quickSuggestions": {
+            "strings": true,
+            "other": true,
+            "comments": false
+        },
+        "editor.defaultFormatter": "kennylong.kubernetes-yaml-formatter",
+        "editor.formatOnSave": false
+    }
+}

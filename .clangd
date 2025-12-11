@@ -1,0 +1,14 @@
+CompileFlags:
+  Add:
+    - -Iexternal\notcurses\include
+    - -Iexternal\compat\include
+    - -std=c11
+    - -Wall
+    - -Wextra
+
+Diagnostics:
+  Suppress:
+    - unresolved-includes
+
+Index:
+  Background: Build

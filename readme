@@ -1,0 +1,39 @@
+Simple HTTP TUI
+----------------
+
+Minimal cross-platform HTTP client TUI using notcurses.
+Builds on Linux and Windows (via MinGW in WSL).
+
+DEPENDENCIES
+------------
+
+Arch Linux (WSL):
+    sudo pacman -S clang make pkgconf notcurses cmake git base-devel
+
+MinGW toolchain (AUR):
+    yay -S mingw-w64-gcc mingw-w64-crt mingw-w64-headers \
+          mingw-w64-pkg-config mingw-w64-libdeflate mingw-w64-zlib
+
+BUILD (LINUX)
+-------------
+
+    make linux
+
+Result:
+    bin/simple-http-tui
+
+BUILD (WINDOWS CROSS-COMPILE)
+-----------------------------
+
+    make windows
+
+This will:
+    - generate MinGW toolchain file
+    - clone notcurses
+    - build notcurses for Windows
+    - build bin/simple-http-tui.exe
+
+RUN
+---
+
+    ./bin/simple-http-tui
