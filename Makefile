@@ -42,6 +42,10 @@ run: $(TARGET)
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR) toolchain-mingw.cmake deps
 
+compiledb:
+	$(CC) $(CFLAGS) -Iexternal/notcurses/include -Iexternal/compat/include -std=c11 -c src/main.c
+	$(CC) $(CFLAGS) -Iexternal/notcurses/include -Iexternal/compat/include -std=c11 -c src/ui.c
+
 # ===========================
 # Linux build
 # ===========================
@@ -65,16 +69,16 @@ $(TOOLCHAIN_FILE):
 	@echo "Generating MinGW toolchain file..."
 	@mkdir -p deps
 	@cat > $(TOOLCHAIN_FILE) <<EOF
-SET(CMAKE_SYSTEM_NAME Windows)
-SET(CMAKE_SYSTEM_PROCESSOR x86_64)
-SET(CMAKE_C_COMPILER $(MINGW_CC))
-SET(CMAKE_CXX_COMPILER $(MINGW_CXX))
-SET(CMAKE_RC_COMPILER $(MINGW_RC))
-SET(CMAKE_FIND_ROOT_PATH $(MINGW_PREFIX))
-SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-EOF
+		SET(CMAKE_SYSTEM_NAME Windows)
+		SET(CMAKE_SYSTEM_PROCESSOR x86_64)
+		SET(CMAKE_C_COMPILER $(MINGW_CC))
+		SET(CMAKE_CXX_COMPILER $(MINGW_CXX))
+		SET(CMAKE_RC_COMPILER $(MINGW_RC))
+		SET(CMAKE_FIND_ROOT_PATH $(MINGW_PREFIX))
+		SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+		SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+		SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+	EOF
 
 # Clone notcurses
 $(NOTCURSES_DIR):

@@ -1,0 +1,32 @@
+[
+ {
+  "directory": "C:\\dev\\simple_http_client",
+  "arguments": [
+   "cc",
+   "-Wall",
+   "-Wextra",
+   "-O2",
+   "-std=c11",
+   "-c",
+   "src/main.c",
+   "-o",
+   "build/main.o"
+  ],
+  "file": "src/main.c"
+ },
+ {
+  "directory": "C:\\dev\\simple_http_client",
+  "arguments": [
+   "cc",
+   "-Wall",
+   "-Wextra",
+   "-O2",
+   "-std=c11",
+   "-c",
+   "src/ui.c",
+   "-o",
+   "build/ui.o"
+  ],
+  "file": "src/ui.c"
+ }
+]

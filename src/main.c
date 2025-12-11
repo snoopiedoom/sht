@@ -8,8 +8,7 @@
 #include "ui.h"
 
 
-int
-main(void)
+int main(void)
 {
     /* recommended for proper Unicode handling */
     setlocale(LC_ALL, "");

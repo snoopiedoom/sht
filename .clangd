@@ -1,7 +1,7 @@
 CompileFlags:
   Add:
-    - -Iexternal\notcurses\include
-    - -Iexternal\compat\include
+    - -Iexternal/notcurses/include
+    - -Iexternal/compat/include
     - -std=c11
     - -Wall
     - -Wextra
@@ -12,3 +12,12 @@ Diagnostics:
 
 Index:
   Background: Build
+
+InlayHints:
+    Enabled: false
+
+Completion:
+    AllScopes: True
+    ArgumentLists: None
+    HeaderInsertion: Never
+    CodePatterns: All
