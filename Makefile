@@ -1,146 +1,57 @@
-# ai generated makefiles got me tweaking fr fr kike killer 9000
 # ===========================
 # Build config
 # ===========================
-CC      ?= clang
-CSTD    ?= -std=c11
-CFLAGS  ?= -Wall -Wextra -O2 $(CSTD)
-LDFLAGS ?=
+# Use MSYS2 bash for building
+MSYS_BASH = C:/msys64/usr/bin/bash.exe
 
 SRC_DIR := src
-OBJ_DIR := build
 BIN_DIR := bin
 
-TARGET  := $(BIN_DIR)/sht
+TARGET := $(BIN_DIR)/sht.exe
+TARGET_DEBUG := $(BIN_DIR)/sht_debug.exe
 
-SRC := $(SRC_DIR)/main.c \
-       $(SRC_DIR)/ui.c
+.PHONY: all clean run distclean help rebuild debug test
 
-OBJ := $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+all:
+	$(MSYS_BASH) build.sh
 
-# notcurses pkgconfig (Linux build)
-CFLAGS  += $(shell pkg-config --cflags notcurses 2>/dev/null)
-LDFLAGS += $(shell pkg-config --libs notcurses 2>/dev/null)
+# Alternative build with minimal logging and different mouse mode
+debug:
+	@echo Building debug version...
+	$(MSYS_BASH) -c "export PATH=/mingw64/bin:$$PATH && cd /c/dev/sht && \
+	  mkdir -p build bin && \
+	  gcc -Wall -Wextra -O2 -std=c11 -I/mingw64/include -c src/main_noalt.c -o build/main_noalt.o && \
+	  gcc build/main_noalt.o build/ui.o -o bin/sht_debug.exe -L/mingw64/lib -lnotcurses -lnotcurses-core -lnotcurses-ffi && \
+	  echo 'Debug build complete: bin/sht_debug.exe'"
 
-.PHONY: all clean run linux windows notcurses-win
-.ONESHELL:
+# Test terminal capabilities
+test:
+	$(MSYS_BASH) test_terminal.sh
 
-# ===========================
-# Default build
-# ===========================
-all: $(TARGET)
+rebuild: clean all
 
-$(TARGET): $(OBJ)
-	@mkdir -p $(BIN_DIR)
-	$(CC) $(OBJ) -o $@ $(LDFLAGS)
-
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
-	@mkdir -p $(OBJ_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-run: $(TARGET)
-	$(TARGET)
+run: all
+	@echo Running sht...
+	$(MSYS_BASH) -c "cd /c/dev/sht && ./bin/sht.exe"
 
 clean:
-	rm -rf $(OBJ_DIR) $(BIN_DIR) toolchain-mingw.cmake deps
+	if exist build rmdir /S /Q build
+	if exist bin rmdir /S /Q bin
 
-compiledb:
-	$(CC) $(CFLAGS) -Iexternal/notcurses/include -Iexternal/compat/include -std=c11 -c src/main.c
-	$(CC) $(CFLAGS) -Iexternal/notcurses/include -Iexternal/compat/include -std=c11 -c src/ui.c
+distclean: clean
+	if exist deps rmdir /S /Q deps
+	if exist dist rmdir /S /Q dist
 
-# ===========================
-# Linux build
-# ===========================
-linux:
-	$(MAKE) clean
-	$(MAKE) CC=clang TARGET=$(BIN_DIR)/sht
-
-# ===========================
-# Windows cross-build (WSL)
-# ===========================
-MINGW_PREFIX   := /usr/x86_64-w64-mingw32
-MINGW_CC       := x86_64-w64-mingw32-gcc
-MINGW_CXX      := x86_64-w64-mingw32-g++
-MINGW_RC       := x86_64-w64-mingw32-windres
-TOOLCHAIN_FILE := toolchain-mingw.cmake
-NOTCURSES_DIR  := deps/notcurses
-NOTCURSES_BUILD:= $(NOTCURSES_DIR)/build-win
-
-# Toolchain file
-$(TOOLCHAIN_FILE):
-	@echo "Generating MinGW toolchain file..."
-	@mkdir -p deps
-	@cat > $(TOOLCHAIN_FILE) <<-EOF
-	SET(CMAKE_SYSTEM_NAME Windows)
-	SET(CMAKE_SYSTEM_PROCESSOR x86_64)
-	SET(CMAKE_C_COMPILER $(MINGW_CC))
-	SET(CMAKE_CXX_COMPILER $(MINGW_CXX))
-	SET(CMAKE_RC_COMPILER $(MINGW_RC))
-	SET(CMAKE_FIND_ROOT_PATH $(MINGW_PREFIX))
-	SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-	SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-	SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-	EOF
-
-# Clone notcurses
-$(NOTCURSES_DIR):
-	@git clone https://github.com/dankamongmen/notcurses.git $(NOTCURSES_DIR)
-
-# Build notcurses for Windows
-notcurses-win: $(TOOLCHAIN_FILE) $(NOTCURSES_DIR)
-	@echo "Building notcurses (Windows)..."
-	@rm -rf $(NOTCURSES_BUILD)
-	@mkdir -p $(NOTCURSES_BUILD)
-	@cd $(NOTCURSES_BUILD) && cmake .. \
-	-DCMAKE_TOOLCHAIN_FILE=../../$(TOOLCHAIN_FILE) \
-	-DUSE_PANDOC=OFF \
-	-DUSE_DOXYGEN=OFF \
-	-DUSE_UNIBREAK=OFF \
-	-DBUILD_TESTING=OFF \
-	-DUSE_DOCTEST=OFF \
-	-DUSE_FFMPEG=OFF \
-	-DUSE_MULTIMEDIA=none \
-	-DCMAKE_BUILD_TYPE=Release \
-	-DCMAKE_INSTALL_PREFIX=$(MINGW_PREFIX)
-	@cd $(NOTCURSES_BUILD) && make -j$$(nproc)
-	@cd $(NOTCURSES_BUILD) && make install
-	@echo "Done."
-
-# Windows build
-windows: notcurses-win
-	@echo "Building Windows executable..."
-	$(MAKE) clean
-	$(MAKE) CC=$(MINGW_CC) \
-		CFLAGS="-I$(MINGW_PREFIX)/include -O2 -std=c11" \
-		LDFLAGS="-L$(MINGW_PREFIX)/lib -lnotcurses-core -lnotcurses -static" \
-		TARGET=$(BIN_DIR)/sht.exe
-
-# ===========================
-# Windows packaging
-# ===========================
-PACKAGE_DIR := dist/win
-PACKAGE_ZIP := dist/sht-win.zip
-
-package-win: windows
-	@echo "Packaging Windows build..."
-	@rm -rf $(PACKAGE_DIR)
-	@mkdir -p $(PACKAGE_DIR)
-
-	# Copy executable
-	@cp bin/sht.exe $(PACKAGE_DIR)
-
-	# Copy required MinGW DLLs
-	@cp /usr/x86_64-w64-mingw32/bin/libgcc_s_seh-1.dll $(PACKAGE_DIR) || true
-	@cp /usr/x86_64-w64-mingw32/bin/libstdc++-6.dll $(PACKAGE_DIR) || true
-	@cp /usr/x86_64-w64-mingw32/bin/libwinpthread-1.dll $(PACKAGE_DIR) || true
-
-	# Copy notcurses DLLs (if present)
-	@cp /usr/x86_64-w64-mingw32/bin/notcurses.dll $(PACKAGE_DIR) || true
-	@cp /usr/x86_64-w64-mingw32/bin/notcurses-core.dll $(PACKAGE_DIR) || true
-	@cp /usr/x86_64-w64-mingw32/bin/libdeflate.dll $(PACKAGE_DIR) || true
-	@cp /usr/x86_64-w64-mingw32/bin/zlib1.dll $(PACKAGE_DIR) || true
-
-	# Create zip
-	@rm -f $(PACKAGE_ZIP)
-	@cd dist && zip -r sht-win.zip win
-	@echo "Done. Output: $(PACKAGE_ZIP)"
+help:
+	@echo sht - Simple HTTP TUI
+	@echo.
+	@echo Targets:
+	@echo   all     - Build executable and copy DLLs
+	@echo   debug   - Build debug version (reduced logging, different mouse mode)
+	@echo   test    - Test terminal capabilities
+	@echo   rebuild - Clean and build from scratch
+	@echo   clean   - Remove build artifacts
+	@echo   help    - Show this message
+	@echo.
+	@echo Run from Windows Terminal:
+	@echo   .\bin\sht.exe

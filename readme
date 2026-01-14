@@ -1,39 +1,215 @@
-Simple HTTP TUI
-----------------
+sht - Simple HTTP TUI
+---------------------
 
 Minimal cross-platform HTTP client TUI using notcurses.
-Builds on Linux and Windows (via MinGW in WSL).
 
-DEPENDENCIES
+BUILD (Linux/WSL)
+-----------------
+
+    sudo pacman -S notcurses clang make pkg-config   # Arch
+    make
+
+BUILD (Windows - WSL with MSYS2)
+---------------------------------
+
+1. Ensure MSYS2 is installed at C:\msys64
+2. Install dependencies:
+
+    C:\msys64\usr\bin\pacman.exe -S mingw-w64-x86_64-notcurses mingw-w64-x86_64-ffmpeg
+
+3. Build:
+
+    ./build.sh
+
+    This automatically builds sht.exe and copies ALL required DLLs
+    (currently ~155 DLLs, ~206MB due to FFmpeg dependencies)
+
+BUILD TARGETS
+--------------
+
+| Target | Description | Output |
+|--------|-------------|--------|
+| `all` | Standard build (sht.exe) | bin/sht.exe |
+| `debug` | Debug build (reduced logging) | bin/sht_debug.exe |
+| `test` | Test terminal capabilities | Diagnostic output |
+| `rebuild` | Clean then build | bin/sht.exe |
+
+DEBUGGING TERMINAL ISSUES
+---------------------------
+
+**Problem: Mouse positions printed to screen instead of cursor movement**
+
+If you see mouse coordinate text being printed (like "insert_path:491:added fixed..."):
+This means your terminal is either:
+1. Not interpreting mouse escape sequences correctly
+2. In "raw" mode that echoes all input
+3. Not supporting xterm-style mouse reporting
+
+**Solutions:**
+
+1. Try debug build (reduced logging):
+   ```
+   make debug
+   ./launch_debug.bat
+   ```
+
+2. Check terminal capabilities:
+   ```
+   make test
+   ```
+
+3. Set proper TERM environment:
+   - Use `launch.bat` or `launch.sh` which sets TERM=xterm-256color
+   - Or set manually: `set TERM=xterm-256color`
+
+4. Use different terminal:
+   - Windows Terminal (recommended)
+   - Alacritty
+   - WezTerm
+   - mintty (MSYS2 default)
+   - AVOID: legacy cmd.exe or PowerShell windows
+
+5. Check Windows Terminal settings:
+   - Press Ctrl+Shift+P to open settings
+   - Enable "Use legacy console" = OFF
+   - Ensure color support is enabled
+
+DLL DEPENDENCIES
+-----------------
+
+The build script uses `ldd` to automatically detect and copy ALL DLL dependencies.
+
+**⚠️ IMPORTANT**: MSYS2's notcurses is built with full FFmpeg/multimedia
+support. This results in many DLL dependencies (~155 files, ~206MB).
+
+**Why So Many DLLs?**
+- notcurses initializes FFmpeg for video rendering on startup
+- Even though sht doesn't use video features, all codecs load
+- FFmpeg pulls in 100+ codec, audio, and graphics libraries
+- Cairo/Pango for text rendering adds 50+ libraries
+
+**Build Script Behavior**:
+1. Runs `ldd bin/sht.exe` to find all DLL dependencies
+2. Copies each dependency from /mingw64/bin to bin/
+3. Also copies commonly missed DLLs for FFmpeg/Cairo stack
+
+**Verification**:
+- Check dependencies anytime: `./check_deps.sh`
+- Run terminal test: `make test`
+
+RUNNING THE APPLICATION
+--------------------
+
+**Option 1: Windows Terminal (PowerShell)**
+```powershell
+cd C:\dev\sht
+.\bin\sht.exe
+```
+
+**Option 2: Windows Terminal with launcher (sets TERM)**
+```batch
+cd C:\dev\sht
+.\launch.bat
+```
+
+**Option 3: Windows Terminal with verbose output (shows errors in console)**
+```batch
+cd C:\dev\sht
+.\run_verbose.bat
+```
+
+**Option 4: MSYS2 bash**
+```bash
+C:\msys64\usr\bin\bash.exe -c "cd /c/dev/sht && ./bin/sht.exe"
+```
+
+**Option 5: Debug build (if standard build has issues)**
+```batch
+cd C:\dev\sht
+.\launch_debug.bat
+```
+
+CONTROLS
+--------
+
+    q / ESC     quit
+    mouse       click to interact
+
+AVAILABLE SCRIPTS
+-----------------
+
+| Script | Purpose |
+|--------|---------|
+| `build.sh` | Build sht.exe and copy ALL ~155 DLLs |
+| `check_deps.sh` | Check if all DLLs are present |
+| `launch.bat` | Launch with TERM environment set |
+| `launch.sh` | Launch from bash with TERM environment |
+| `run_verbose.bat` | Launch with dependency checking and console errors |
+| `test_terminal.sh` | Test terminal capabilities |
+| `build_notcurses_minimal.sh` | Rebuild notcurses without FFmpeg (slow) |
+
+TROUBLESHOOTING
+---------------
+
+**Build fails:**
+```bash
+cd sht
+./build.sh
+```
+
+**Missing DLLs when running:**
+```bash
+cd sht
+./check_deps.sh  # Shows what's missing
+./build.sh       # Copies missing DLLs
+```
+
+**Mouse coordinates printed to screen:**
+- Try debug build: `make debug`
+- Test terminal: `make test`
+- Use launcher: `.\launch.bat` or `.\launch.sh`
+- Ensure you're using Windows Terminal (not legacy console)
+- Check Windows Terminal settings (Ctrl+Shift+P)
+
+**Garbled output or app doesn't start:**
+1. Ensure you're using Windows Terminal
+2. Don't use legacy cmd.exe or PowerShell windows
+3. Try MSYS2 bash as fallback
+4. Set TERM environment: `set TERM=xterm-256color`
+5. Check Windows Terminal color profile
+
+**Application crashes or displays incorrectly:**
+1. Check all ~155 DLLs are in bin/ directory
+2. Run `./check_deps.sh` to verify
+3. Ensure terminal supports ANSI escape sequences
+4. Try different terminal profiles in Windows Terminal
+
+**Verification:**
+```bash
+cd sht
+ls bin/*.dll | wc -l   # Should output: ~155
+du -sh bin/             # Should output: ~206M
+./check_deps.sh           # Should report "All dependencies satisfied"
+```
+
+DEBUG OUTPUT
 ------------
 
-Arch Linux (WSL):
-    sudo pacman -S clang make pkgconf notcurses cmake git base-devel
+If you see many debug messages (like "send_initial_queries:", "inputctx_add_input_escape:", etc.):
+- This is normal notcurses trace output
+- It should not appear on screen with NCLOGLEVEL_ERROR
+- If standard build shows these, try `make debug` for reduced logging
 
-MinGW toolchain (AUR):
-    yay -S mingw-w64-gcc mingw-w64-crt mingw-w64-headers \
-          mingw-w64-pkg-config mingw-w64-libdeflate mingw-w64-zlib
+Mouse position text printed (like "insert_path:491:added fixed..."):
+- This indicates terminal not handling mouse events correctly
+- Try debug build or different launch method
+- See "DEBUGGING TERMINAL ISSUES" section above
 
-BUILD (LINUX)
--------------
+SUMMARY
+--------
 
-    make linux
-
-Result:
-    bin/simple-http-tui
-
-BUILD (WINDOWS CROSS-COMPILE)
------------------------------
-
-    make windows
-
-This will:
-    - generate MinGW toolchain file
-    - clone notcurses
-    - build notcurses for Windows
-    - build bin/simple-http-tui.exe
-
-RUN
----
-
-  ./bin/simple-http-tui
+✅ **Working**: Compilation, linking, dependency copying
+⚠️  **Dependency Load**: ~155 DLLs, ~206MB (due to notcurses FFmpeg)
+✅ **Automatic**: All dependencies detected and copied via `ldd`
+✅ **Diagnostic**: Scripts available for testing and debugging
+🎯 **Ready to Run**: Use Windows Terminal with proper launchers

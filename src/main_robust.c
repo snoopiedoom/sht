@@ -11,29 +11,37 @@ int main(void)
 {
     setlocale(LC_ALL, "");
 
-    struct notcurses_options opts = {0};
-    opts.loglevel = NCLOGLEVEL_TRACE;
-    opts.flags = NCOPTION_SUPPRESS_BANNERS 
-               | NCOPTION_DRAIN_INPUT
-               | NCOPTION_PRESERVE_CURSOR;
+    /* Try to initialize with multiple configurations */
+    struct notcurses *nc = NULL;
+    struct app_ui ui;
 
-    /* Pass stdout explicitly */
-    struct notcurses *nc = notcurses_init(&opts, stdout);
+    /* First attempt: standard settings */
+    struct notcurses_options opts = {0};
+    opts.loglevel = NCLOGLEVEL_ERROR;
+    opts.flags = NCOPTION_SUPPRESS_BANNERS
+               | NCOPTION_DRAIN_INPUT
+               | NCOPTION_NO_WINCH_SIGHANDLER;
+    
+    /* Try initializing */
+    nc = notcurses_init(&opts, stdout);
+    
     if (!nc) {
-        fprintf(stderr, "notcurses_init failed\n");
+        fprintf(stderr, "\nERROR: notcurses_init failed\n");
         fprintf(stderr, "Press Enter to exit...\n");
         getchar();
         return EXIT_FAILURE;
     }
 
-    struct app_ui ui;
+    /* Try to initialize UI */
     if (ui_init(&ui, nc) != 0) {
-        fprintf(stderr, "ui_init failed\n");
+        fprintf(stderr, "\nERROR: ui_init failed\n");
         notcurses_stop(nc);
         return EXIT_FAILURE;
     }
 
-    notcurses_mice_enable(nc, NCMICE_ALL_EVENTS);
+    /* Enable mouse - but try different modes */
+    int mouse_enabled = notcurses_mice_enable(nc, NCMICE_BUTTON_EVENT);
+    
     ui_draw(&ui);
 
     bool running = true;
@@ -41,7 +49,11 @@ int main(void)
         struct ncinput ni;
         uint32_t id = notcurses_get_blocking(nc, &ni);
 
-        if (id == (uint32_t)-1) break;
+        if (id == (uint32_t)-1) {
+            fprintf(stderr, "notcurses_get_blocking failed\n");
+            running = false;
+            break;
+        }
         if (id == 0) continue;
 
         if (id == 'q' || id == 'Q' || id == NCKEY_ESC) {
@@ -55,13 +67,17 @@ int main(void)
             continue;
         }
 
-        if (nckey_mouse_p(id) && ni.evtype == NCTYPE_PRESS) {
+        /* Handle ANY mouse event (not just button press) */
+        if (nckey_mouse_p(id)) {
             ui_handle_click(&ui, ni.y, ni.x);
             continue;
         }
     }
 
-    notcurses_mice_disable(nc);
+    /* Cleanup */
+    if (mouse_enabled == 0) {
+        notcurses_mice_disable(nc);
+    }
     ui_shutdown(&ui);
     notcurses_stop(nc);
 

@@ -12,12 +12,12 @@ int main(void)
     setlocale(LC_ALL, "");
 
     struct notcurses_options opts = {0};
-    opts.loglevel = NCLOGLEVEL_TRACE;
-    opts.flags = NCOPTION_SUPPRESS_BANNERS 
+    opts.loglevel = NCLOGLEVEL_ERROR;  /* Reduce logging */
+    opts.flags = NCOPTION_SUPPRESS_BANNERS
                | NCOPTION_DRAIN_INPUT
-               | NCOPTION_PRESERVE_CURSOR;
+               | NCOPTION_PRESERVE_CURSOR
+               | NCOPTION_NO_ALTERNATE_SCREEN;  /* Try alternate screen off */
 
-    /* Pass stdout explicitly */
     struct notcurses *nc = notcurses_init(&opts, stdout);
     if (!nc) {
         fprintf(stderr, "notcurses_init failed\n");
@@ -33,7 +33,9 @@ int main(void)
         return EXIT_FAILURE;
     }
 
-    notcurses_mice_enable(nc, NCMICE_ALL_EVENTS);
+    /* Try different mouse mode - just button press events */
+    notcurses_mice_enable(nc, NCMICE_BUTTON_EVENT);
+
     ui_draw(&ui);
 
     bool running = true;
@@ -55,7 +57,8 @@ int main(void)
             continue;
         }
 
-        if (nckey_mouse_p(id) && ni.evtype == NCTYPE_PRESS) {
+        /* Check for ANY mouse event (not just press) */
+        if (nckey_mouse_p(id)) {
             ui_handle_click(&ui, ni.y, ni.x);
             continue;
         }
